@@ -1,0 +1,7 @@
+node_modules
+dist
+__pycache__
+*.pyc
+test-results
+playwright-report
+.pytest_cache
