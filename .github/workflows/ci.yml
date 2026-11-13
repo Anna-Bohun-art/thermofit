@@ -21,11 +21,11 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: npm ci
         working-directory: frontend
-      - run: npx tsc -b && npx vitest run && npm run build
+      - run: npx tsc -b && npm test && npm run build
         working-directory: frontend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
-      - run: npx playwright test
+      - run: npm run test:e2e
         working-directory: frontend
       - uses: actions/upload-artifact@v4
         if: always()

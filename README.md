@@ -43,7 +43,7 @@ python -m uvicorn app.main:app --port 8000
 
 # frontend (second terminal)
 cd frontend && npm install && npm run dev  # http://localhost:5173
-npx playwright test                        # end-to-end tests (starts both servers)
+npm run test:e2e                       # end-to-end tests (starts both servers)
 ```
 
 Docker: `docker compose up --build`, then open http://localhost:8080.
