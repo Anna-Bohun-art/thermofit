@@ -7,13 +7,13 @@ from app.rag import core
 todo = pytest.mark.xfail(raises=NotImplementedError, strict=True, reason="Anna implements")
 
 
+@todo
 def test_chunk_keeps_heading_and_ids():
     chunks = core.chunk_markdown("# A\ntext one\n\n## B\ntext two\n", "doc")
     assert [c["heading"] for c in chunks] == ["A", "B"]
     assert chunks[0]["id"] == "doc#0"
 
 
-@todo
 def test_top_k_orders_by_cosine():
     m = np.array([[1, 0], [0, 1], [1, 1]], dtype=np.float32)
     hits = core.top_k(np.array([1, 0.1], dtype=np.float32), m, k=2)
