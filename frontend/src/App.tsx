@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { loadDemo, runFit, type Analysis, type DemoKind, type FitResult } from './api'
+import { ExplainPanel } from './ExplainPanel'
 import { FitChart } from './FitChart'
 import { displayParam, fmt, paramRow } from './format'
 import { describeParam, plainSummary } from './glossary'
@@ -156,6 +157,8 @@ export default function App() {
           })()}
         </section>
       )}
+
+      {result && <ExplainPanel result={result} />}
     </main>
   )
 }

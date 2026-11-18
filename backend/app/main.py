@@ -5,10 +5,15 @@ import io
 from pathlib import Path
 
 import pandas as pd
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from . import fitting, synthetic
+from .rag import llm, service
 
 MAX_UPLOAD_BYTES = 2_000_000
 DATA_DIR = Path(__file__).parent / "data"
@@ -20,7 +25,10 @@ THESIS_SOURCE = (
 
 FE_RATES = {"thesis_fe_0p5": 0.5, "thesis_fe_1p0": 1.0, "thesis_fe_1p46": 1.46}
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="ThermoFit API", version="0.1.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -97,3 +105,20 @@ def demo(kind: str):
     else:
         raise HTTPException(404, "Unknown demo dataset.")
     return {"csv": body, "synthetic": source is None, "source": source, "scan_rate": scan_rate}
+
+
+class ExplainRequest(BaseModel):
+    fit_result: dict
+    question: str = Field(min_length=3, max_length=300)
+
+
+@app.post("/api/explain")
+@limiter.limit("10/minute")
+def explain(request: Request, body: ExplainRequest):
+    """RAG: explain a fit result, grounded in the knowledge base."""
+    try:
+        return service.explain(body.fit_result, body.question)
+    except (FileNotFoundError, NotImplementedError) as exc:
+        raise HTTPException(503, "Explain assistant is not set up yet.") from exc
+    except llm.LLMError as exc:
+        raise HTTPException(502, str(exc)) from exc

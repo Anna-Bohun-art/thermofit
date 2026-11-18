@@ -9,6 +9,6 @@ playwright-report
 venv
 .env
 *.zip
-
+PLAN_RAG.md
 #Ignore local review notes
 REVIEW_NOTES.md

@@ -53,3 +53,18 @@ export async function loadDemo(kind: DemoKind): Promise<Demo> {
   const suffix = body.synthetic ? 'SIMULATED' : 'digitized'
   return { file: new File([body.csv], `${kind}_${suffix}.csv`, { type: 'text/csv' }), synthetic: body.synthetic, source: body.source, scanRate: body.scan_rate }
 }
+
+export type ExplainSource = { id: string; heading: string; text: string }
+export type Explanation = { answer: string; sources: ExplainSource[] }
+
+export async function explainFit(fitResult: FitResult, question: string): Promise<Explanation> {
+  const res = await fetch('/api/explain', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fit_result: fitResult, question }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (res.status === 429) throw new Error('Zu viele Fragen – bitte kurz warten.')
+  if (!res.ok) throw new Error(typeof body.detail === 'string' ? body.detail : `Request failed (${res.status})`)
+  return body as Explanation
+}
