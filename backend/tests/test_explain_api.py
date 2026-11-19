@@ -18,8 +18,11 @@ def test_explain_question_too_long():
     assert r.status_code == 422
 
 
-def test_explain_not_set_up():
-    # no index.npz yet -> 503, not 500
+def test_explain_not_set_up(monkeypatch):
+    # index files missing -> 503, not 500 (simulated, so the test doesn't depend on the repo)
+    def missing(f, q):
+        raise FileNotFoundError("index.npz")
+    monkeypatch.setattr(main.service, "explain", missing)
     assert client.post("/api/explain", json=BODY).status_code == 503
 
 
