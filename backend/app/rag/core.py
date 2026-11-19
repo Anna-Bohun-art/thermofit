@@ -78,6 +78,11 @@ def top_k(query_vec: np.ndarray, matrix: np.ndarray, k: int = 4) -> list[tuple[i
     return [(int(i), float(scores[i])) for i in best]
 
 
+def _fmt(value: float) -> str:
+    """4 significant digits: 45.33182019185409 -> '45.33', 0.000123456 -> '0.0001235'."""
+    return f"{value:.4g}"
+
+
 def build_prompt(fit_result: dict, question: str, chunks: list[dict]) -> tuple[str, str]:
     """Return (system, user) for the LLM.
 
@@ -90,14 +95,24 @@ def build_prompt(fit_result: dict, question: str, chunks: list[dict]) -> tuple[s
         "Regeln:\n"
         "1. Zahlen nimmst du ausschließlich aus dem FIT-ERGEBNIS. Erfinde keine Werte.\n"
         "2. Erkläre nur mit Hilfe der QUELLEN. Kein Wissen von außerhalb.\n"
-        "3. Nenne nach jeder Aussage die Quelle in eckigen Klammern, z. B. [doc#0].\n"
-        f'4. Wenn die Quellen die Frage nicht abdecken, antworte genau: "{NO_BASIS}"'
+        "3. Belege Aussagen aus den QUELLEN mit der Chunk-ID in eckigen Klammern, z. B. [doc#0]. "
+        "Das FIT-ERGEBNIS ist keine Quelle und bekommt keine Klammer.\n"
+        "4. Gib Zahlen so an, wie sie im FIT-ERGEBNIS stehen (nicht neu runden oder umrechnen).\n"
+        f'5. Wenn die Quellen die Frage nicht abdecken, antworte genau: "{NO_BASIS}"'
     )
 
-    # one line per parameter: "- Tm = 61.2 degC"
-    param_lines = [
-        f"- {p['name']} = {p['value']} {p['unit']}" for p in fit_result["params"]
-    ]
+    # one line per parameter: "- Tm = 61.2 ± 0.3 degC" (± only if the fit gave an uncertainty)
+    param_lines = []
+    for p in fit_result["params"]:
+        line = f"- {p['name']} = {_fmt(p['value'])}"
+        if p.get("stderr") is not None:
+            line += f" ± {_fmt(p['stderr'])}"
+        param_lines.append(f"{line} {p['unit']}".rstrip())
+
+    # fit quality, if present
+    for key, label in (("r2", "R²"), ("rmse", "RMSE")):
+        if fit_result.get(key) is not None:
+            param_lines.append(f"- {label} = {_fmt(fit_result[key])}")
     # one block per chunk: "[doc#0] (A)" + the text
     source_blocks = [
         f"[{c['id']}] ({c['heading']})\n{c['text']}" for c in chunks
