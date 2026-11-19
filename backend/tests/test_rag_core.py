@@ -1,13 +1,7 @@
 """Test skeletons for Anna's RAG core. Remove xfail as each function is implemented."""
 import numpy as np
-import pytest
-
 from app.rag import core
 
-todo = pytest.mark.xfail(raises=NotImplementedError, strict=True, reason="Anna implements")
-
-
-@todo
 def test_chunk_keeps_heading_and_ids():
     chunks = core.chunk_markdown("# A\ntext one\n\n## B\ntext two\n", "doc")
     assert [c["heading"] for c in chunks] == ["A", "B"]
@@ -20,7 +14,6 @@ def test_top_k_orders_by_cosine():
     assert [i for i, _ in hits] == [0, 2]
 
 
-@todo
 def test_prompt_contains_numbers_sources_and_rules():
     fit = {"model": "two_state", "params": [{"name": "Tm", "value": 61.2, "unit": "degC"}]}
     chunks = [{"id": "doc#0", "heading": "A", "text": "Two-state model ..."}]
