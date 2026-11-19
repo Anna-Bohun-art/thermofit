@@ -20,3 +20,17 @@ def test_prompt_contains_numbers_sources_and_rules():
     system, user = core.build_prompt(fit, "Was bedeutet Tm?", chunks)
     assert "61.2" in user and "doc#0" in user and "Was bedeutet Tm?" in user
     assert core.NO_BASIS in system
+
+
+def test_prompt_rounds_numbers_and_shows_uncertainty():
+    fit = {
+        "model": "two_state",
+        "params": [{"name": "Tm", "value": 45.33182019185409, "stderr": 0.2137, "unit": "degC"}],
+        "r2": 0.99871,
+        "rmse": None,
+    }
+    _, user = core.build_prompt(fit, "Was bedeutet Tm?", [])
+    assert "Tm = 45.33 ± 0.2137 degC" in user
+    assert "45.3318" not in user
+    assert "R² = 0.9987" in user
+    assert "RMSE" not in user   # None is skipped
